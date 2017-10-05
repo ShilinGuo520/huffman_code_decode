@@ -16,7 +16,7 @@
 
 struct CTNode {
 	unsigned char data;
-	struct CTNode *lchild, *rchild, *parent;
+	struct CTNode *lchild, *rchild;
 };
 
 int InitBiTree(struct CTNode **T)
@@ -103,26 +103,6 @@ int BiTreeDepth(struct CTNode *T)
 }
 
 
-void file_2_ascii(void)
-{
-	int p_file;
-	int q_file;
-	unsigned char temp;
-
-	p_file = open("./memory-barriers.txt", O_RDONLY);
-	q_file = open("./temp.txt", O_WRONLY);
-
-	while(read(p_file, &temp, 1)) {
-		printf("%c", temp);
-		if ((temp >= 97) && (temp <= 122))
-			write(q_file, &temp, 1);
-	}
-
-	close(p_file);
-	close(q_file);
-}
-
-unsigned char node_data[27] = {0};
 
 unsigned char find_max(int totile[], int num)
 {
@@ -141,24 +121,22 @@ unsigned char find_max(int totile[], int num)
 	return j;
 }
 
-void ascii_count(void)
+void ascii_count(const char *path, unsigned char buff[])
 {
 	int q_file;
 	int i = 0;
 	unsigned char temp;
-	int totile[27] = {0};
+	int totile[256] = {0};
 
-	q_file = open("./temp.txt", O_RDONLY);
+	q_file = open(path, O_RDONLY);
 
 	while(read(q_file, &temp, 1)) {
-		totile[temp - 97] += 1;
+		totile[temp] += 1;
 	}
 
-	for (i = 0; i < 26; i++) {
-		node_data[i] = (find_max(totile, 27) + 97);
+	for (i = 0; i < 256; i++) {
+		buff[i] = find_max(totile, 256);
 	}
-
-	printf("\n%s\n", node_data);
 }
 
 
@@ -166,9 +144,10 @@ int out_file;
 unsigned char byte;
 unsigned char bit_num;
 
-void add_bit_2_file_init(const char *dec)
+void add_bit_2_file_init(const char *dec, unsigned char *header)
 {
 	out_file = open(dec, O_WRONLY | O_TRUNC | O_CREAT, 0x1FFF);
+	write(out_file, header, 256);
 	byte = 0;
 	bit_num = 0;
 }
@@ -202,13 +181,18 @@ int in_file;
 unsigned char in_byte;
 unsigned char in_bit_num;
 
-void read_bit_4_file_init(const char *src)
+
+
+void read_bit_4_file_init(const char *src, unsigned char *node_buff)
 {
 	in_file = open(src, O_RDONLY);
+
+	read(in_file, node_buff, 256);
 
 	read(in_file, &in_byte, 1);
 	in_bit_num = 0;
 }
+
 
 unsigned char read_bit_4_file(void)
 {
@@ -257,7 +241,6 @@ unsigned char huffman_decode(struct CTNode *root)
 	while (1) {
 		if (bit_temp) {
 			ret = root->lchild->data;
-//			printf("%c", ret);
 
 			if (bit_temp > 1)
 				return bit_temp;
@@ -305,14 +288,15 @@ void code(const char *src, const char *dec)
 	int in_file;
 	unsigned char temp;
         struct CTNode *root;
+	unsigned char node_data[256];
 
-        ascii_count();
+        ascii_count(src, node_data);
 
         InitBiTree(&root);
         CreateBiTree(&root, node_data);
 
+	add_bit_2_file_init(dec, node_data);
 
-	add_bit_2_file_init(dec);
 	in_file = open(src, O_RDONLY);
 
 
@@ -327,11 +311,18 @@ void code(const char *src, const char *dec)
 	add_bit_2_file_exit();
 }
 
-void decode(struct CTNode *root, const char *src, const char *dec)
+void decode(const char *src, const char *dec)
 {
 	int out_file;
 	unsigned char temp;
-	read_bit_4_file_init(src);
+	unsigned char node_data[256];
+	struct CTNode *root;
+
+
+	read_bit_4_file_init(src, node_data);
+
+	InitBiTree(&root);
+	CreateBiTree(&root, node_data);
 
 	out_file = open(dec, O_WRONLY | O_TRUNC | O_CREAT, 0x1FFF);
 
@@ -347,21 +338,8 @@ void decode(struct CTNode *root, const char *src, const char *dec)
 
 int main()
 {
-	int res;
-	unsigned char *buff;
-	struct CTNode *root;
-
-//	file_2_ascii();
-
-	ascii_count();
-
-	res = InitBiTree(&root);
-	res = CreateBiTree(&root, node_data);
-	buff = (unsigned char*)malloc(sizeof(BiTreeDepth(root)));
-	res = TraversalBiTree(root, buff);
-
-	code("./temp.txt", "./codetemp.hm");
-	decode(root, "./codetemp.hm", "./decode_out.txt");
+	code("./memory-barriers.txt", "./codetemp.hm");
+	decode("./codetemp.hm", "./decode_out.txt");
 
 	return 0;
 }
