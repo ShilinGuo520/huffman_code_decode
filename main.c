@@ -336,10 +336,44 @@ void decode(const char *src, const char *dec)
 	read_bit_4_file_exit();
 }
 
-int main()
+
+void help(void) 
 {
-	code("./memory-barriers.txt", "./codetemp.hm");
-	decode("./codetemp.hm", "./decode_out.txt");
+	printf("------------help info------------- \nused:\nmain code/decode -i xxx -o yyy\n");
+}
+
+
+int main(int argc,char *argv[])
+{
+	char in_file_path[25];
+	char out_file_path[25];
+
+	if ((argc > 6) || (argc < 2)) {
+		printf("param number error\n");
+		help();
+		return -1;
+	} 
+
+	if (!strcmp(argv[1], "-h")) {
+		help();
+		return 0;
+	}
+
+	if ((!strcmp(argv[2], "-i")) && (!strcmp(argv[4], "-o"))) {
+		strcpy(in_file_path, argv[3]);
+		strcpy(out_file_path, argv[5]);
+		if (access(in_file_path, R_OK)) {
+			printf("in file not find.\n");
+			return -1;
+		}
+	}
+
+	if (!strcmp(argv[1], "code"))
+		code(in_file_path, out_file_path);
+	else if (!strcmp(argv[1], "decode"))
+		decode(in_file_path, out_file_path);
+	else
+		printf("code/decode error.\n");
 
 	return 0;
 }
